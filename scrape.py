@@ -21,10 +21,18 @@ print("External IP:", external_ip)
 # Get the URL
 url = os.environ.get('URL')
 
-# Use the URL
-k = requests.get(url).text
 
 headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36'}
+
+try:
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()  # Raise an HTTPError for bad responses
+    k = response.text
+except requests.exceptions.HTTPError as err:
+    print(f"HTTP error occurred: {err}")
+except Exception as err:
+    print(f"Other error occurred: {err}")
+
 soup=BeautifulSoup(k,'html.parser')
 # Find all div tags with class gridrow
 gridrows = soup.find_all('div', class_='gridrow')
@@ -36,6 +44,11 @@ found_event = False
 client = MongoClient(os.environ.get('DB_URL'))
 db = client['eventDb']
 collection = db['EventDetails']
+
+# logging when no events are found
+if len(gridrows) == 0:
+    print('No events found')
+    pass
 
 # For each gridrow
 for gridrow in gridrows:
